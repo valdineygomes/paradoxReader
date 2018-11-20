@@ -1,24 +1,29 @@
 package com.khubla.pdxreader.util;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 
 public class ParadoxDate {
-   static public Date getDateFromParadoxDate(int d) {
-      final Calendar calendar = Calendar.getInstance();
-      /*
+
+    static public String getDateFromParadoxDate(byte[] data) {
+        data[0] = (byte) (data[0] & 0x7f);
+        final int days = ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).getInt();
+        final Calendar calendar = Calendar.getInstance();
+        /*
        * Jan 1, 1 A.D.
-       */
-      calendar.set(Calendar.YEAR, 1);
-      calendar.set(Calendar.MONTH, 1);
-      calendar.set(Calendar.DATE, 1);
-      /*
+         */
+        calendar.set(Calendar.YEAR, 1);
+        calendar.set(Calendar.MONTH, 1);
+        calendar.set(Calendar.DATE, 1);
+        /*
        * add days
-       */
-      calendar.add(Calendar.DATE, d);
-      /*
+         */
+        calendar.add(Calendar.DATE, days);
+        /*
        * return date
-       */
-      return calendar.getTime();
-   }
+         */
+        return new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
+    }
 }

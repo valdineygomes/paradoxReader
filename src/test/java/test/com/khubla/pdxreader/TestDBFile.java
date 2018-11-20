@@ -13,20 +13,22 @@ import com.khubla.pdxreader.util.TestUtil;
 
 @Test
 public class TestDBFile {
-   public void testRead() {
-      try {
-         final List<String> files = TestUtil.getTestFiles("src/test/resources/examples/", new String[] { ".DB" });
-         for (final String filename : files) {
-            final File inputFile = new File(filename);
-            Assert.assertTrue(inputFile.exists());
-            System.out.println(filename);
-            final DBTableFile pdxFile = new DBTableFile();
-            final PDXTableListener pdxReaderListener = new PDXTableReaderCSVListenerImpl();
-            pdxFile.read(inputFile, pdxReaderListener);
-         }
-      } catch (final Exception e) {
-         e.printStackTrace();
-         Assert.fail();
-      }
-   }
+
+    public void testRead() {
+        try {
+            final List<String> files = TestUtil.getTestFiles("src/test/resources/examples/", new String[]{".DB"});
+            for (final String filename : files) {
+                final File inputFile = new File(filename);
+                Assert.assertTrue(inputFile.exists());
+                System.out.println(inputFile.getName());
+                final DBTableFile pdxFile = new DBTableFile();
+                final File outputFile = new File("/tmp/" + inputFile.getName() + ".csv");
+                final PDXTableListener pdxReaderListener = new PDXTableReaderCSVListenerImpl(outputFile);
+                pdxFile.read(inputFile, pdxReaderListener);
+            }
+        } catch (final Exception e) {
+            e.printStackTrace();
+            Assert.fail();
+        }
+    }
 }

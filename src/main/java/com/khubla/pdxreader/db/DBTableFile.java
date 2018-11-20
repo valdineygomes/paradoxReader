@@ -14,171 +14,174 @@ import com.khubla.pdxreader.api.PDXTableListener;
  * @author tom
  */
 public class DBTableFile {
-   /**
-    * max header size
-    */
-   private final static int MAX_HEADER_SIZE = 10240;
-   /**
-    * max block size (64K blocks are the biggest blocks)
-    */
-   private final static int MAX_BLOCK_SIZE = 64 * 1024;
-   /**
-    * header
-    */
-   private DBTableHeader dbTableHeader;
-   /**
-    * blocks
-    */
-   private Hashtable<Integer, DBTableBlock> blocks;
 
-   public Hashtable<Integer, DBTableBlock> getBlocks() {
-      return blocks;
-   }
+    /**
+     * max header size
+     */
+    private final static int MAX_HEADER_SIZE = 10240;
+    /**
+     * max block size (64K blocks are the biggest blocks)
+     */
+    private final static int MAX_BLOCK_SIZE = 64 * 1024;
+    /**
+     * header
+     */
+    private DBTableHeader dbTableHeader;
+    /**
+     * blocks
+     */
+    private Hashtable<Integer, DBTableBlock> blocks;
 
-   public DBTableHeader getDbTableHeader() {
-      return dbTableHeader;
-   }
+    public Hashtable<Integer, DBTableBlock> getBlocks() {
+        return blocks;
+    }
 
-   /**
-    * read
-    *
-    * @throws PDXReaderException
-    * @throws FileNotFoundException
-    */
-   public void read(File file, PDXTableListener pdxReaderListener) throws PDXReaderException, FileNotFoundException {
-      /*
+    public DBTableHeader getDbTableHeader() {
+        return dbTableHeader;
+    }
+
+    /**
+     * read
+     *
+     * @param file
+     * @param pdxReaderListener
+     * @throws PDXReaderException
+     * @throws FileNotFoundException
+     */
+    public void read(File file, PDXTableListener pdxReaderListener) throws PDXReaderException, FileNotFoundException {
+        /*
        * check if the file exists
-       */
-      if (file.exists()) {
-         try {
-            /*
-             * start
-             */
-            pdxReaderListener.start();
-            /*
-             * set up streams
-             */
-            final BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file));
-            final LittleEndianDataInputStream littleEndianDataInputStream = new LittleEndianDataInputStream(bufferedInputStream);
+         */
+        if (file.exists()) {
             try {
-               /*
+                /*
+             * start
+                 */
+                pdxReaderListener.start();
+                /*
+             * set up streams
+                 */
+                final BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file));
+                final LittleEndianDataInputStream littleEndianDataInputStream = new LittleEndianDataInputStream(bufferedInputStream);
+                try {
+                    /*
                 * mark and read the headers
-                */
-               bufferedInputStream.mark(MAX_HEADER_SIZE);
-               readHeaders(littleEndianDataInputStream);
-               /*
+                     */
+                    bufferedInputStream.mark(MAX_HEADER_SIZE);
+                    readHeaders(littleEndianDataInputStream);
+                    /*
                 * call the api
-                */
-               pdxReaderListener.header(dbTableHeader);
-               /*
+                     */
+                    pdxReaderListener.header(dbTableHeader);
+                    /*
                 * read the block data
-                */
-               bufferedInputStream.reset();
-               readBlocks(bufferedInputStream, pdxReaderListener);
-               /*
+                     */
+                    bufferedInputStream.reset();
+                    readBlocks(bufferedInputStream, pdxReaderListener);
+                    /*
                 * done
-                */
-               pdxReaderListener.finish();
-            } finally {
-               littleEndianDataInputStream.close();
-               bufferedInputStream.close();
+                     */
+                    pdxReaderListener.finish();
+                } finally {
+                    littleEndianDataInputStream.close();
+                    bufferedInputStream.close();
+                }
+            } catch (final Exception e) {
+                throw new PDXReaderException("Exception in read", e);
             }
-         } catch (final Exception e) {
-            throw new PDXReaderException("Exception in read", e);
-         }
-      } else {
-         throw new FileNotFoundException();
-      }
-   }
+        } else {
+            throw new FileNotFoundException();
+        }
+    }
 
-   /**
-    * read block data
-    */
-   private void readBlocks(BufferedInputStream bufferedInputStream, PDXTableListener pdxReaderListener) throws PDXReaderException {
-      try {
-         /*
+    /**
+     * read block data
+     */
+    private void readBlocks(BufferedInputStream bufferedInputStream, PDXTableListener pdxReaderListener) throws PDXReaderException {
+        try {
+            /*
           * init the array
-          */
-         blocks = new Hashtable<Integer, DBTableBlock>();
-         /*
+             */
+            blocks = new Hashtable<Integer, DBTableBlock>();
+            /*
           * skip to the first block
-          */
-         final int nSkip = dbTableHeader.getHeaderBlockSize();
-         if (nSkip == bufferedInputStream.skip(nSkip)) {
-            /*
+             */
+            final int nSkip = dbTableHeader.getHeaderBlockSize();
+            if (nSkip == bufferedInputStream.skip(nSkip)) {
+                /*
              * records per block
-             */
-            final int recordsPerBlock = dbTableHeader.calculateRecordsPerBlock();
-            /*
+                 */
+                final int recordsPerBlock = dbTableHeader.calculateRecordsPerBlock();
+                /*
              * total records remaining to read
-             */
-            long recordsremaining = dbTableHeader.getNumberRecords();
-            /*
+                 */
+                long recordsremaining = dbTableHeader.getNumberRecords();
+                /*
              * walk blocks
-             */
-            final int blocksInUse = dbTableHeader.getBlocksInUse();
-            for (int i = 0; i < blocksInUse; i++) {
-               /*
+                 */
+                final int blocksInUse = dbTableHeader.getBlocksInUse();
+                for (int i = 0; i < blocksInUse; i++) {
+                    /*
                 * block
-                */
-               final DBTableBlock pdxTableBlock = new DBTableBlock(i + 1, recordsPerBlock, dbTableHeader.getFields());
-               /*
+                     */
+                    final DBTableBlock pdxTableBlock = new DBTableBlock(i + 1, recordsPerBlock, dbTableHeader.getFields());
+                    /*
                 * mark at the start of the block
-                */
-               bufferedInputStream.mark(MAX_BLOCK_SIZE);
-               /*
+                     */
+                    bufferedInputStream.mark(MAX_BLOCK_SIZE);
+                    /*
                 * read the block data
-                */
-               long recordsToRead = recordsPerBlock;
-               if (recordsremaining < recordsPerBlock) {
-                  recordsToRead = recordsremaining;
-               }
-               pdxTableBlock.read(pdxReaderListener, bufferedInputStream, recordsToRead);
-               /*
+                     */
+                    long recordsToRead = recordsPerBlock;
+                    if (recordsremaining < recordsPerBlock) {
+                        recordsToRead = recordsremaining;
+                    }
+                    pdxTableBlock.read(pdxReaderListener, bufferedInputStream, recordsToRead);
+                    /*
                 * fewer records
-                */
-               recordsremaining -= recordsToRead;
-               /*
+                     */
+                    recordsremaining -= recordsToRead;
+                    /*
                 * store it. blocks are numbered from 1, not from 0.
-                */
-               blocks.put(pdxTableBlock.getBlockNumber(), pdxTableBlock);
-               /*
+                     */
+                    blocks.put(pdxTableBlock.getBlockNumber(), pdxTableBlock);
+                    /*
                 * reset to the start of the block
-                */
-               bufferedInputStream.reset();
-               /*
+                     */
+                    bufferedInputStream.reset();
+                    /*
                 * skip ahead to next block
-                */
-               bufferedInputStream.skip(dbTableHeader.getBlockSize().getValue() * 1024);
+                     */
+                    bufferedInputStream.skip(dbTableHeader.getBlockSize().getValue() * 1024);
+                }
+            } else {
+                throw new PDXReaderException("File format exception");
             }
-         } else {
-            throw new PDXReaderException("File format exception");
-         }
-      } catch (final Exception e) {
-         throw new PDXReaderException("Exception in readBlocks", e);
-      }
-   }
+        } catch (final Exception e) {
+            throw new PDXReaderException("Exception in readBlocks", e);
+        }
+    }
 
-   /**
-    * read
-    */
-   private void readHeaders(LittleEndianDataInputStream littleEndianDataInputStream) throws PDXReaderException {
-      try {
-         /*
+    /**
+     * read
+     */
+    private void readHeaders(LittleEndianDataInputStream littleEndianDataInputStream) throws PDXReaderException {
+        try {
+            /*
           * read header
-          */
-         dbTableHeader = new DBTableHeader();
-         dbTableHeader.read(littleEndianDataInputStream);
-      } catch (final Exception e) {
-         throw new PDXReaderException("Exception in readHeaders", e);
-      }
-   }
+             */
+            dbTableHeader = new DBTableHeader();
+            dbTableHeader.read(littleEndianDataInputStream);
+        } catch (final Exception e) {
+            throw new PDXReaderException("Exception in readHeaders", e);
+        }
+    }
 
-   public void setBlocks(Hashtable<Integer, DBTableBlock> blocks) {
-      this.blocks = blocks;
-   }
+    public void setBlocks(Hashtable<Integer, DBTableBlock> blocks) {
+        this.blocks = blocks;
+    }
 
-   public void setDbTableHeader(DBTableHeader dbTableHeader) {
-      this.dbTableHeader = dbTableHeader;
-   }
+    public void setDbTableHeader(DBTableHeader dbTableHeader) {
+        this.dbTableHeader = dbTableHeader;
+    }
 }

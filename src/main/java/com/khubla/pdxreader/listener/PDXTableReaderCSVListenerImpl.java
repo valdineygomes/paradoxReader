@@ -1,67 +1,89 @@
 package com.khubla.pdxreader.listener;
 
-import java.util.Date;
 import java.util.List;
-
 import com.khubla.pdxreader.api.PDXTableListener;
 import com.khubla.pdxreader.db.DBTableField;
 import com.khubla.pdxreader.db.DBTableHeader;
 import com.khubla.pdxreader.db.DBTableValue;
+import com.univocity.parsers.csv.CsvWriter;
+import com.univocity.parsers.csv.CsvWriterSettings;
+import java.io.File;
+import java.util.stream.Collectors;
 
 /**
  * @author tom
  */
 public class PDXTableReaderCSVListenerImpl implements PDXTableListener {
-   /**
-    * total records
-    */
-   private int totalRecords = 0;
 
-   @Override
-   public void finish() {
-      System.out.println("# total records " + totalRecords);
-   }
+    private static final Character DELIMITER = ';';
+    private static final Character QUOTE = '"';
+    private static final Character ESCAPE = '\\';
+    private static final String LINE_SAPARATOR = "\r\n";
 
-   @Override
-   public void header(DBTableHeader pdxTableHeader) {
-      /*
-       * show the table fields
-       */
-      boolean first = true;
-      for (final DBTableField pdxTableField : pdxTableHeader.getFields()) {
-         if (first) {
-            first = false;
-         } else {
-            System.out.print(",");
-         }
-         System.out.print(pdxTableField.getName());
-      }
-      System.out.println();
-   }
+    private final File outputFile;
+    private final Character delimiter;
+    private final Character quote;
+    private final Character escape;
+    private final String lineSeparator;
 
-   @Override
-   public void record(List<DBTableValue> values) {
-      /*
-       * count the record
-       */
-      totalRecords++;
-      /*
-       * dump the record
-       */
-      boolean first = true;
-      for (final DBTableValue pdxTableValue : values) {
-         if (first) {
-            first = false;
-         } else {
-            System.out.print(",");
-         }
-         System.out.print(pdxTableValue.getValue());
-      }
-      System.out.println();
-   }
+    private CsvWriter writer;
 
-   @Override
-   public void start() {
-      System.out.println("# generated " + new Date().toString());
-   }
+    public PDXTableReaderCSVListenerImpl(File outputFile) {
+        this.outputFile = outputFile;
+        this.delimiter = DELIMITER;
+        this.quote = QUOTE;
+        this.escape = ESCAPE;
+        this.lineSeparator = LINE_SAPARATOR;
+    }
+
+    public PDXTableReaderCSVListenerImpl(File outputFile, Character delimiter, Character quote, Character escape, String lineSeparator) {
+        this.outputFile = outputFile;
+        this.delimiter = delimiter;
+        this.quote = quote;
+        this.escape = escape;
+        this.lineSeparator = lineSeparator;
+    }
+
+    @Override
+    public void start() {
+        CsvWriterSettings settings = new CsvWriterSettings();
+        settings.setNullValue("");
+        settings.setMaxCharsPerColumn(-1);
+        settings.getFormat().setDelimiter(delimiter);
+        settings.getFormat().setQuote(quote);
+        settings.getFormat().setQuoteEscape(escape);
+        settings.getFormat().setLineSeparator(lineSeparator);
+
+        if (outputFile.exists()) {
+            outputFile.delete();
+        }
+
+        writer = new CsvWriter(outputFile, settings);
+    }
+
+    @Override
+    public void header(DBTableHeader tableHeader) {
+        //Write the header.
+        writer.writeHeaders(tableHeader
+                .getFields()
+                .stream()
+                .map(DBTableField::getName)
+                .map(column -> column.toLowerCase())
+                .collect(Collectors.toList()));
+    }
+
+    @Override
+    public void record(List<DBTableValue> values) {
+        //Write the records.
+        writer.writeRow(values
+                .stream()
+                .map(DBTableValue::getValue)
+                .map(value -> value.replaceAll("\"|\n|\r|\\\\|;|\\p{C}|\\p{S}", ""))
+                .collect(Collectors.toList()));
+    }
+
+    @Override
+    public void finish() {
+        writer.close();
+    }
 }
