@@ -108,6 +108,7 @@ public class PDXReader {
             }
         } catch (final Exception e) {
             e.printStackTrace();
+            System.exit(0);
         }
     }
 }
