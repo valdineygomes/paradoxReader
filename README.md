@@ -32,8 +32,9 @@ To use the paradoxReader in code, supply an InputStream to a .DB file, and an im
 
 ```java
 final InputStream inputStream = TestDBFile.class.getResourceAsStream(filename);
+final File outputFile = new File(outputFileName);
 final DBTableFile pdxFile = new DBTableFile();
-final PDXTableListener pdxTableListener = new MyPDXTableListener();
+final PDXTableListener pdxTableListener = new MyPDXTableListener(outputFile);
 pdxFile.read(inputStream, pdxTableListener);
 ```
 
