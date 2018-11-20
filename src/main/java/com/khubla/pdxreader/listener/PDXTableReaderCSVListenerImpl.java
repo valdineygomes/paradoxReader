@@ -8,6 +8,8 @@ import com.khubla.pdxreader.db.DBTableValue;
 import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.stream.Collectors;
 
 /**
@@ -25,7 +27,8 @@ public class PDXTableReaderCSVListenerImpl implements PDXTableListener {
     private final Character quote;
     private final Character escape;
     private final String lineSeparator;
-
+    private String processDate;
+    
     private CsvWriter writer;
 
     public PDXTableReaderCSVListenerImpl(File outputFile) {
@@ -46,6 +49,8 @@ public class PDXTableReaderCSVListenerImpl implements PDXTableListener {
 
     @Override
     public void start() {
+        processDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+        
         CsvWriterSettings settings = new CsvWriterSettings();
         settings.setNullValue("");
         settings.setMaxCharsPerColumn(-1);
@@ -63,23 +68,32 @@ public class PDXTableReaderCSVListenerImpl implements PDXTableListener {
 
     @Override
     public void header(DBTableHeader tableHeader) {
-        //Write the header.
-        writer.writeHeaders(tableHeader
+        List<String> header = tableHeader
                 .getFields()
                 .stream()
                 .map(DBTableField::getName)
                 .map(column -> column.toLowerCase())
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
+
+        //Include the load date column.
+        header.add("etl_load_date");
+
+        //Write the header.
+        writer.writeHeaders(header);
     }
 
     @Override
     public void record(List<DBTableValue> values) {
-        //Write the records.
-        writer.writeRow(values
+        List<String> record = values
                 .stream()
                 .map(DBTableValue::getValue)
                 .map(value -> value.replaceAll("\"|\n|\r|\\\\|;|\\p{C}|\\p{S}", ""))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
+        
+        record.add(processDate);
+        
+        //Write the records.
+        writer.writeRow(record);
     }
 
     @Override
