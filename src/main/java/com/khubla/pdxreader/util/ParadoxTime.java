@@ -16,7 +16,7 @@ public class ParadoxTime {
        * Jan 1, 1 A.D. 00:00:00 
          */
         calendar.set(Calendar.YEAR, 1);
-        calendar.set(Calendar.MONTH, 1);
+        calendar.set(Calendar.MONTH, 0);
         calendar.set(Calendar.DATE, 1);
         calendar.set(Calendar.HOUR, 0);
         calendar.set(Calendar.MINUTE, 0);
