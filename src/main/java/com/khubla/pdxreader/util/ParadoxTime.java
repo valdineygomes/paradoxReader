@@ -8,7 +8,7 @@ import java.util.Calendar;
 public class ParadoxTime {
 
     static public String getTimeFromParadoxTime(byte[] data) {
-        data[0] = (byte) (data[0] & 0x7f); // handle unsigned number
+        data[0] = (byte) (data[0] & 0x7f);
         int milisseconds = ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).getInt();
         final Calendar calendar = Calendar.getInstance();
 
